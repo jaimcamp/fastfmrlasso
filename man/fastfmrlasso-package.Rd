@@ -1,6 +1,6 @@
-\name{fast_fmrlasso-package}
-\alias{fast_fmrlasso-package}
-\alias{fast_fmrlasso}
+\name{fastfmrlasso-package}
+\alias{fastfmrlasso-package}
+\alias{fastfmrlasso}
 \docType{package}
 \title{
 What the package does (short line)
@@ -11,7 +11,7 @@ More about what it does (maybe more than one line)
 }
 \details{
 \tabular{ll}{
-Package: \tab fast_fmrlasso\cr
+Package: \tab fastfmrlasso\cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
 Date: \tab 2015-01-05\cr
