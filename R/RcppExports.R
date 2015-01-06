@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 rcpp_hello_world <- function() {
-    .Call('fast_fmrlasso_rcpp_hello_world', PACKAGE = 'fast_fmrlasso')
+    .Call('fastfmrlasso_rcpp_hello_world', PACKAGE = 'fastfmrlasso')
 }
 

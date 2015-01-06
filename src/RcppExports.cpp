@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // rcpp_hello_world
 List rcpp_hello_world();
-RcppExport SEXP fast_fmrlasso_rcpp_hello_world() {
+RcppExport SEXP fastfmrlasso_rcpp_hello_world() {
 BEGIN_RCPP
     SEXP __sexp_result;
     {
