@@ -33,10 +33,30 @@ NumericVector colSumsC(NumericMatrix x){
   return out;
 }
 
+NumericVector cnloglikprob(
+  NumericVector ncomp, NumericVector l1normphi,
+  NumericVector prob, double lambda, double gamma){
+    // Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
+    return -sum(ncomp*log(prob))+lambda*sum(pow(prob,gamma)*l1normphi);
+    }
+  
+  
+
+  
+//cnloglikprob <- function(ncomp,l1normphi,prob,lambda,gamma=1)
+//{
+//  ## Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
+//  ## ----------------------------------------------------------------------
+//  ## Arguments:         
+//  ## ----------------------------------------------------------------------
+//  ## Author: Nicolas Staedler
+//  -sum(ncomp*log(prob))+lambda*sum((prob)^{gamma}*l1normphi)
+//}
+
 // [[Rcpp::export]]
 List fmrlasso(
   NumericMatrix x, NumericVector y,
-  int k, double lamda, double ssdini, NumericMatrix exini,
+  int k, double lambda, double ssdini, NumericMatrix exini,
   double gamma=1,
   double term= 10e-6, int maxiter=1000,
   int actiter=10,
@@ -74,7 +94,8 @@ List fmrlasso(
       }
       NumericVector l1normphi = colSumsC(temp);
       NumericVector probfeas = ncomp / n; //feasible point
-      List out = List::create(ex,beta,temp,l1normphi,probfeas);
+      NumericVector valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
+      List out = List::create(ncomp,l1normphi,prob,lambda,gamma,valueold);
       return out;
       warn = true;
     }
