@@ -64,8 +64,9 @@ List fmrlasso(
     int n = y.size();
     int p = x.ncol();
     NumericVector prob(k , 1.0/k);
-    NumericMatrix beta(p,k);
-    NumericVector ssd(k,ssdini);
+    arma::mat beta(p,k, arma::fill::zeros);
+    arma::vec ssd(k);
+    ssd.fill(ssdini);
     NumericMatrix ex = exini;
     List act; //To store active set
     NumericMatrix xbeta(n,k);
@@ -87,15 +88,21 @@ List fmrlasso(
       //M-STEP
       //update prob
       NumericVector ncomp = colSumsC(ex);
-      NumericMatrix temp = beta( Range(0,beta.nrow()-1), Range(1,beta.ncol()-1));
-      int tempsize = temp.ncol()*temp.nrow();
-      for(int j=0; j<tempsize; j++){
-        temp[j] = abs(temp[j]);
-      }
-      NumericVector l1normphi = colSumsC(temp);
-      NumericVector probfeas = ncomp / n; //feasible point
-      NumericVector valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
-      List out = List::create(ncomp,l1normphi,prob,lambda,gamma,valueold);
+      beta(0,0)=-8;
+      beta(2,1)=-13;
+      beta(2,2)=23;
+      arma::mat temp = sum(abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
+      //NumericMatrix temp = beta( Range(1,beta.nrow()-1), Range(0,beta.ncol()-1));
+      //int tempsize = temp.ncol()*temp.nrow();
+      //for(int j=0; j<tempsize; j++){
+      //  temp[j] = abs(temp[j]);
+      //}
+      arma::mat temp2 = temp % (1 / ssd);
+      //NumericVector l1normphi = colSumsC(temp/ssd);
+      //NumericVector probfeas = ncomp / n; //feasible point
+      //NumericVector valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
+      //NumericVector valueold2 = ncomp * l1normphi;
+      List out = List::create(beta, temp,temp2,ssd);
       return out;
       warn = true;
     }
