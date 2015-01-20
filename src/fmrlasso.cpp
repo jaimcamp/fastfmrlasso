@@ -56,7 +56,7 @@ NumericVector cnloglikprob(
 // [[Rcpp::export]]
 List fmrlasso(
   NumericMatrix x, NumericVector y,
-  int k, double lambda, double ssdini, NumericMatrix exini,
+  int k, double lambda, double ssdini, arma::mat exini,
   double gamma=1,
   double term= 10e-6, int maxiter=1000,
   int actiter=10,
@@ -67,7 +67,7 @@ List fmrlasso(
     arma::mat beta(p,k, arma::fill::zeros);
     arma::vec ssd(k);
     ssd.fill(ssdini);
-    NumericMatrix ex = exini;
+    arma::mat ex = exini;
     List act; //To store active set
     NumericMatrix xbeta(n,k);
     NumericMatrix dnregr(n,k);
@@ -87,22 +87,17 @@ List fmrlasso(
       //while  conv or allcord are false AND i is less than maxiter AND warn is false
       //M-STEP
       //update prob
-      NumericVector ncomp = colSumsC(ex);
-      beta(0,0)=-8;
+      arma::vec ncomp = arma::conv_to<arma::vec>::from(sum(ex,0));
+      beta(0,0)=-8; //To try
       beta(2,1)=-13;
       beta(2,2)=23;
       arma::mat temp = sum(abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
-      //NumericMatrix temp = beta( Range(1,beta.nrow()-1), Range(0,beta.ncol()-1));
-      //int tempsize = temp.ncol()*temp.nrow();
-      //for(int j=0; j<tempsize; j++){
-      //  temp[j] = abs(temp[j]);
-      //}
-      arma::mat temp2 = temp % (1 / ssd);
-      //NumericVector l1normphi = colSumsC(temp/ssd);
-      //NumericVector probfeas = ncomp / n; //feasible point
+      arma::vec l1normphi = arma::conv_to<arma::vec>::from(temp)  % (1 / ssd);
+      arma::vec probfeas = ncomp / n; //feasible point
+      arma::vec valueold2 = ncomp * l1normphi;
       //NumericVector valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
       //NumericVector valueold2 = ncomp * l1normphi;
-      List out = List::create(beta, temp,temp2,ssd);
+      List out = List::create(n,ex,ncomp,probfeas, valueold2);
       return out;
       warn = true;
     }
