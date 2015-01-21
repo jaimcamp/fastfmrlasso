@@ -33,12 +33,7 @@ NumericVector colSumsC(NumericMatrix x){
   return out;
 }
 
-NumericVector cnloglikprob(
-  NumericVector ncomp, NumericVector l1normphi,
-  NumericVector prob, double lambda, double gamma){
-    // Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
-    return -sum(ncomp*log(prob))+lambda*sum(pow(prob,gamma)*l1normphi);
-    }
+
   
   
 
@@ -54,6 +49,17 @@ NumericVector cnloglikprob(
 //}
 
 // [[Rcpp::export]]
+
+double cnloglikprob(
+  arma::vec ncomp, arma::vec l1normphi, arma::vec prob, double lambda, double gamma){
+    // Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
+    
+    //return -sum(ncomp*log(prob))+lambda*sum(pow(prob,gamma)*l1normphi);
+    return (-1*dot(ncomp,log(prob))) + (lambda * dot(pow(prob,gamma),l1normphi));
+}
+    
+// [[Rcpp::export]]
+    
 List fmrlasso(
   NumericMatrix x, NumericVector y,
   int k, double lambda, double ssdini, arma::mat exini,
@@ -63,7 +69,8 @@ List fmrlasso(
   bool warnings=true){
     int n = y.size();
     int p = x.ncol();
-    NumericVector prob(k , 1.0/k);
+    arma::vec prob(k);
+    prob.fill(1.0/k);
     arma::mat beta(p,k, arma::fill::zeros);
     arma::vec ssd(k);
     ssd.fill(ssdini);
@@ -94,10 +101,9 @@ List fmrlasso(
       arma::mat temp = sum(abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
       arma::vec l1normphi = arma::conv_to<arma::vec>::from(temp)  % (1 / ssd);
       arma::vec probfeas = ncomp / n; //feasible point
-      arma::vec valueold2 = ncomp * l1normphi;
-      //NumericVector valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
-      //NumericVector valueold2 = ncomp * l1normphi;
-      List out = List::create(n,ex,ncomp,probfeas, valueold2);
+      double valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
+      double valuenew = cnloglikprob(ncomp,l1normphi,probfeas,lambda,gamma);
+      List out = List::create(prob,probfeas,valueold,valuenew);
       return out;
       warn = true;
     }

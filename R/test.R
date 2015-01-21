@@ -1,5 +1,14 @@
 library(Rcpp)
 Rcpp::sourceCpp("src/fmrlasso.cpp")
-x<-matrix(1,nrow = 10,ncol = 3)
-y<-rep(10,4)
-fmrlasso(x = x,y = y,k = 4,lambda = 2,ssdini = 2,gamma = 0.2,exini = matrix(c(2,1,7,6,1,44),2,3))
+n<-5
+k<-4
+p<-8
+x<-matrix(rexp(n*p),nrow = n,ncol = p)
+y<-rep(rexp(p),p)
+
+(tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,
+         gamma = 0.9,exini = fmrlasso::ini.ex(k = k,n = n)))
+
+#Comparison implementations cnloglikprob
+cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9)
+fmrlasso::cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9)
