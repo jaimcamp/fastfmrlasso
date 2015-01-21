@@ -10,5 +10,11 @@ y<-rep(rexp(p),p)
          gamma = 0.9,exini = fmrlasso::ini.ex(k = k,n = n)))
 
 #Comparison implementations cnloglikprob
-cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9)
-fmrlasso::cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9)
+library(microbenchmark)
+#ncomp,l1normphi,probfeas,lambda,gamma
+microbenchmark(times = 1000,
+  cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9),
+  fmrlasso::cnloglikprob(tmp[[1]],tmp[[2]],tmp[[3]],1.28,0.9)
+)
+
+

@@ -33,28 +33,11 @@ NumericVector colSumsC(NumericMatrix x){
   return out;
 }
 
-
-  
-  
-
-  
-//cnloglikprob <- function(ncomp,l1normphi,prob,lambda,gamma=1)
-//{
-//  ## Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
-//  ## ----------------------------------------------------------------------
-//  ## Arguments:         
-//  ## ----------------------------------------------------------------------
-//  ## Author: Nicolas Staedler
-//  -sum(ncomp*log(prob))+lambda*sum((prob)^{gamma}*l1normphi)
-//}
-
 // [[Rcpp::export]]
 
 double cnloglikprob(
   arma::vec ncomp, arma::vec l1normphi, arma::vec prob, double lambda, double gamma){
     // Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
-    
-    //return -sum(ncomp*log(prob))+lambda*sum(pow(prob,gamma)*l1normphi);
     return (-1*dot(ncomp,log(prob))) + (lambda * dot(pow(prob,gamma),l1normphi));
 }
     
@@ -78,6 +61,7 @@ List fmrlasso(
     List act; //To store active set
     NumericMatrix xbeta(n,k);
     NumericMatrix dnregr(n,k);
+    List out;
     
     int i =0;
     double err1 = arma::math::inf(); //convergence of parameters
@@ -103,7 +87,26 @@ List fmrlasso(
       arma::vec probfeas = ncomp / n; //feasible point
       double valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
       double valuenew = cnloglikprob(ncomp,l1normphi,probfeas,lambda,gamma);
-      List out = List::create(prob,probfeas,valueold,valuenew);
+      double t = 1.0;
+      arma::vec probnew(probfeas);
+      out = List::create(ncomp,l1normphi,probfeas,lambda,gamma);
+      printf("%lf", t);
+      while ((valuenew-valueold) > 0){ //Modify the PI probability while the logLIK is growing
+        t = t*del;
+        probnew = (1-t)*prob+t*probfeas; // \pi^(m+1)
+        valuenew = cnloglikprob(ncomp,l1normphi,probnew,lambda,gamma);
+        printf("%lf", t);
+      }    
+      // Update phi,rho
+      if ( (allcoord) & (i>0) ){
+      allcoord = false;
+      }
+      
+      if ( (actiteration==actiter) | conv ){
+      actiteration = 0;
+      allcoord = false;
+      }
+ 
       return out;
       warn = true;
     }
