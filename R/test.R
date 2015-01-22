@@ -4,7 +4,7 @@ n<-5
 k<-4
 p<-8
 x<-matrix(rexp(n*p),nrow = n,ncol = p)
-y<-rep(rexp(p),p)
+y<-rexp(n)
 
 (tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,
          gamma = 0.9,exini = fmrlasso::ini.ex(k = k,n = n)))

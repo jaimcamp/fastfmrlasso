@@ -32,6 +32,35 @@ NumericVector colSumsC(NumericMatrix x){
   }
   return out;
 }
+// [[Rcpp::export]]
+
+List updatecoord(int a){
+  return List::create(a+1);
+  
+}
+//updatecoord <- function(phi,yy=yy,xx=xx,yx=yx,lambda=lambda,n=n,x=x){
+//
+//  #update rho
+//  yxphi <- sum(yx*phi)
+//  rho <- (yxphi+sqrt(yxphi^{2}+4*yy*n))/(2*yy)
+//  #update phi[1] (not penalized)
+//  phi[1] <- (rho*yx[1]-sum(xx[1,-1]*phi[-1]))/xx[1,1]
+//
+//  if (length(phi)>1){
+//    for (j in 2:length(phi)){
+//      phi[j] <- 0
+//      s <- -rho*yx[j] + sum(xx[j,]*phi)
+//      if (s > lambda){
+//        phi[j] <- (lambda-s)/(xx[j,j])
+//      }
+//      if (s < -lambda){
+//        phi[j] <- (-s-lambda)/(xx[j,j])
+//      }
+//    }
+//  }
+//  list(phi=phi,rho=rho)
+//}
+
 
 // [[Rcpp::export]]
 
@@ -44,14 +73,14 @@ double cnloglikprob(
 // [[Rcpp::export]]
     
 List fmrlasso(
-  NumericMatrix x, NumericVector y,
+  arma::mat x, arma::vec y,
   int k, double lambda, double ssdini, arma::mat exini,
   double gamma=1,
   double term= 10e-6, int maxiter=1000,
   int actiter=10,
   bool warnings=true){
-    int n = y.size();
-    int p = x.ncol();
+    int n = y.n_elem;
+    int p = x.n_cols;
     arma::vec prob(k);
     prob.fill(1.0/k);
     arma::mat beta(p,k, arma::fill::zeros);
@@ -64,11 +93,11 @@ List fmrlasso(
     List out;
     
     int i =0;
-    double err1 = arma::math::inf(); //convergence of parameters
-    double err2 = arma::math::inf(); //convergence of plik
+    //double err1 = arma::math::inf(); //convergence of parameters
+    //double err2 = arma::math::inf(); //convergence of plik
     bool conv = false;
-    double plik = arma::math::inf(); //sets plik to Inf
-    double theta = arma::math::inf(); //sets the vector of estimated parameters to Inf 
+    //double plik = arma::math::inf(); //sets plik to Inf
+    //double theta = arma::math::inf(); //sets the vector of estimated parameters to Inf 
     bool warn = false;
     bool allcoord = true;
     int actiteration = 0; // act.iter diff from the one in the arguments
@@ -90,12 +119,12 @@ List fmrlasso(
       double t = 1.0;
       arma::vec probnew(probfeas);
       out = List::create(ncomp,l1normphi,probfeas,lambda,gamma);
-      printf("%lf", t);
+      printf("%lf\n", t);
       while ((valuenew-valueold) > 0){ //Modify the PI probability while the logLIK is growing
         t = t*del;
         probnew = (1-t)*prob+t*probfeas; // \pi^(m+1)
         valuenew = cnloglikprob(ncomp,l1normphi,probnew,lambda,gamma);
-        printf("%lf", t);
+        printf("%lf\n", t);
       }    
       // Update phi,rho
       if ( (allcoord) & (i>0) ){
@@ -104,8 +133,37 @@ List fmrlasso(
       
       if ( (actiteration==actiter) | conv ){
       actiteration = 0;
-      allcoord = false;
+      allcoord = true;
       }
+      
+      printf("%s\n", allcoord ? "true" : "false");
+      
+      if (allcoord){
+        for (int j=0; j < k; j++){
+          printf("%s\n", "IF");
+          arma::vec excol= ex.col(j);
+          arma::mat xtilde(x);
+          xtilde.each_col() %= sqrt(excol);
+          arma::vec ytilde = y % sqrt(excol);
+          arma::vec yy = sum(pow(ytilde,2));
+          double yy2 = dot(ytilde,ytilde);
+          arma::vec yx = xtilde.t() * ytilde;
+          arma::mat xx = xtilde.t() * xtilde;
+          beta.col(j)/ssd[j];
+          List mstep = updatecoord(2);
+                    
+//          mstep <- updatecoord(phi=beta[,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
+//          phi <- mstep$phi
+//          rho <- mstep$rho
+//          act[[j]] <-which(phi!=0)
+//          beta[,j] <- phi/rho
+//          ssd[j] <- 1/rho
+          out = List::create(ex,excol,x,xtilde,ytilde,yy,yy2);
+        }
+      } else {
+        printf("%s\n", "Else");
+      }
+          
  
       return out;
       warn = true;
