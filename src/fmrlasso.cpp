@@ -34,33 +34,32 @@ NumericVector colSumsC(NumericMatrix x){
 }
 // [[Rcpp::export]]
 
-List updatecoord(int a){
-  return List::create(a+1);
-  
+List updatecoord(arma::vec phi,double yy,arma::mat xx,arma::mat yx,
+double lambdaupcoord, double n,arma::mat x){
+  List out;
+  //Updates  \rho  
+  double yxphi = dot(phi,yx);
+  double rho = (yxphi + sqrt( pow(yxphi,2)  + 4*yy*n ) ) / ( 2*yy  );
+  int xxdim = xx.n_cols;
+  //arma::vec tmp = arma::vec(phi.subvec(1,phi.n_elem-1));
+  arma::vec subxx = arma::vec(xx( arma::span(0,0), arma::span(1,xxdim-1)).t());
+  phi(0) = ( rho * yx(0) - dot(subxx,phi.subvec(1,phi.n_elem-1))) / xx(0,0);
+  if( phi.n_elem > 1){
+    int philength = phi.n_elem;
+    for(int j = 1; j < (philength ); j++){
+      phi(j) = 0;
+      double s = -1*rho*yx(j) + dot(xx.row(j),phi);
+      if( s > lambdaupcoord){
+        phi(j) = (lambdaupcoord - s )/( xx(j,j));
+      } else if( s < -1*lambdaupcoord){
+        phi(j) = (-lambdaupcoord - s )/( xx(j,j));
+      }      
+    }
+  }
+  out["phi"]=arma::vec(phi);
+  out["rho"]=rho;
+  return out;
 }
-//updatecoord <- function(phi,yy=yy,xx=xx,yx=yx,lambda=lambda,n=n,x=x){
-//
-//  #update rho
-//  yxphi <- sum(yx*phi)
-//  rho <- (yxphi+sqrt(yxphi^{2}+4*yy*n))/(2*yy)
-//  #update phi[1] (not penalized)
-//  phi[1] <- (rho*yx[1]-sum(xx[1,-1]*phi[-1]))/xx[1,1]
-//
-//  if (length(phi)>1){
-//    for (j in 2:length(phi)){
-//      phi[j] <- 0
-//      s <- -rho*yx[j] + sum(xx[j,]*phi)
-//      if (s > lambda){
-//        phi[j] <- (lambda-s)/(xx[j,j])
-//      }
-//      if (s < -lambda){
-//        phi[j] <- (-s-lambda)/(xx[j,j])
-//      }
-//    }
-//  }
-//  list(phi=phi,rho=rho)
-//}
-
 
 // [[Rcpp::export]]
 
@@ -87,7 +86,7 @@ List fmrlasso(
     arma::vec ssd(k);
     ssd.fill(ssdini);
     arma::mat ex = exini;
-    List act; //To store active set
+    arma::mat act(p,k, arma::fill::zeros);; //To store active set
     NumericMatrix xbeta(n,k);
     NumericMatrix dnregr(n,k);
     List out;
@@ -118,14 +117,15 @@ List fmrlasso(
       double valuenew = cnloglikprob(ncomp,l1normphi,probfeas,lambda,gamma);
       double t = 1.0;
       arma::vec probnew(probfeas);
-      out = List::create(ncomp,l1normphi,probfeas,lambda,gamma);
       printf("%lf\n", t);
       while ((valuenew-valueold) > 0){ //Modify the PI probability while the logLIK is growing
         t = t*del;
         probnew = (1-t)*prob+t*probfeas; // \pi^(m+1)
         valuenew = cnloglikprob(ncomp,l1normphi,probnew,lambda,gamma);
         printf("%lf\n", t);
-      }    
+      }
+      prob = arma::vec(probnew); //Actually aupdates the probabilities \Pi
+      
       // Update phi,rho
       if ( (allcoord) & (i>0) ){
       allcoord = false;
@@ -145,27 +145,52 @@ List fmrlasso(
           arma::mat xtilde(x);
           xtilde.each_col() %= sqrt(excol);
           arma::vec ytilde = y % sqrt(excol);
-          arma::vec yy = sum(pow(ytilde,2));
-          double yy2 = dot(ytilde,ytilde);
+          double yy = dot(ytilde,ytilde);
           arma::vec yx = xtilde.t() * ytilde;
-          arma::mat xx = xtilde.t() * xtilde;
-          beta.col(j)/ssd[j];
-          List mstep = updatecoord(2);
-                    
-//          mstep <- updatecoord(phi=beta[,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
-//          phi <- mstep$phi
-//          rho <- mstep$rho
-//          act[[j]] <-which(phi!=0)
-//          beta[,j] <- phi/rho
-//          ssd[j] <- 1/rho
-          out = List::create(ex,excol,x,xtilde,ytilde,yy,yy2);
+          arma::mat xx = xtilde.t() * xtilde; //Until now, everything the same as the R version
+          arma::vec phi = beta.col(j)/ssd(j);
+          double lambdaupcoord = lambda * pow(prob(j),gamma);
+          List mstep = updatecoord(phi=phi,yy=yy,xx=xx,yx=yx,lambda=lambdaupcoord,n=sum(excol),x =x);
+          arma::vec tmp =  mstep["phi"];
+          phi = tmp;
+          double rho = mstep["rho"];
+          act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
+          beta.col(j) = arma::vec(phi/rho);
+          ssd(j) = 1/rho;
         }
       } else {
+        actiteration++ ;
+        for(int j = 0; j<k; j++){
+          arma::vec excol= ex.col(j);
+          arma::vec t_act = act.col(j);
+          arma::mat xtilde(x.cols(arma::find(t_act>0)));
+          xtilde.each_col() %= sqrt(excol);
+          arma::vec ytilde = y % sqrt(excol);
+          double yy = dot(ytilde,ytilde);
+          arma::vec yx = xtilde.t() * ytilde;
+          arma::mat xx = xtilde.t() * xtilde; //Until now, everything the same as the R version
+          arma::vec phi = beta(arma::find(t_act>0,j))/ssd(j);
+          double lambdaupcoord = lambda * pow(prob(j),gamma);
+          List mstepact = updatecoord(phi=phi,yy=yy,xx=xx,yx=yx,lambda=lambdaupcoord,n=sum(excol),x =x);
+          arma::vec phiact =  mstepact["phi"];
+          double rho = mstepact["rho"];
+          act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
+          beta(arma::find(t_act>0),j) = phiact/rho;
+          ssd(j) = 1/rho;
+        }
+//        mstepact <- updatecoord(phi=beta[t.act,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
+//        phiact <- mstepact$phi
+//        rho <- mstepact$rho
+//        beta[t.act,j] <- phiact/rho
+//        ssd[j] <- 1/rho
+//      }
         printf("%s\n", "Else");
+        out = List::create(prob);
+
       }
           
  
-      return out;
       warn = true;
     }
+    return out;
   }
