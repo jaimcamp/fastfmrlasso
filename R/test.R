@@ -9,6 +9,8 @@ exini<-fmrlasso::ini.ex(k = k,n = n)
 
 (tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,
          gamma = 0.9,exini = exini))
+fmrlasso::fmrlasso(x = x,y = y,k = k,lambda = 1.08,  ssd.ini = 0.5,
+                   gamma = 0.9,ex.ini = exini)
 
 #Comparison implementations cnloglikprob
 library(microbenchmark)
