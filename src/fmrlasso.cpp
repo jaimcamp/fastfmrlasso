@@ -106,6 +106,8 @@ List fmrlasso(
     int actiteration = 0; // act.iter diff from the one in the arguments
     double del = 0.1;
     
+    arma::uvec jaime;
+    
     while ( ( (!conv)|(!allcoord) ) & (i<maxiter) & !warn ){
       //while  conv or allcord are false AND i is less than maxiter AND warn is false
       //M-STEP
@@ -155,6 +157,7 @@ List fmrlasso(
           arma::vec tmp =  mstep["phi"];
           phi = tmp;
           double rho = mstep["rho"];
+          jaime = phi!=0;
           act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
           beta.col(j) = arma::vec(phi/rho);
           ssd(j) = 1/rho;
@@ -183,7 +186,7 @@ List fmrlasso(
           ssd(j) = 1/rho;
         }
       }
-      
+      warn=true;
       //E-Step:
       NumericVector value;
       xbeta = x * beta;
@@ -231,6 +234,6 @@ List fmrlasso(
       i++;     
       printf("%i\n",i);
     }
-    out = List::create(conv,i);
+    out = List::create(conv,i,jaime,act);
     return out;
   }
