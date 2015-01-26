@@ -35,17 +35,17 @@ NumericVector colSumsC(NumericMatrix x){
 // [[Rcpp::export]]
 
 List updatecoord(arma::vec phi,double yy,arma::mat xx,arma::mat yx,
-double lambdaupcoord, double n2,arma::mat x){
+double lambdaupcoord, double n2,arma::mat x, std::string status){
   List out;
   //Updates  \rho  
   double yxphi = dot(phi,yx);
   double rho = (yxphi + sqrt( pow(yxphi,2)  + 4*yy*n2 ) ) / ( 2*yy  );
   int xxdim = xx.n_cols;
   //arma::vec tmp = arma::vec(phi.subvec(1,phi.n_elem-1));
-  printf("%s\n","Before update");
-  printf("%i\n",xx.n_rows);
+//  printf("%s\n",status.c_str());
+//  printf("%i\n",phi.n_elem);
+//  printf("%i\n",xx.n_cols);
   arma::vec subxx = arma::vec(xx( arma::span(0,0), arma::span(1,xxdim-1)).t());
-  printf("%s\n","After update");
   phi(0) = ( rho * yx(0) - dot(subxx,phi.subvec(1,phi.n_elem-1))) / xx(0,0);
   if( phi.n_elem > 1){
     int philength = phi.n_elem;
@@ -153,7 +153,7 @@ List fmrlasso(
           arma::mat xx = xtilde.t() * xtilde; //Until now, everything the same as the R version
           arma::vec phi = beta.col(j)/ssd(j);
           double lambdaupcoord = lambda * pow(prob(j),gamma);
-          List mstep = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x);
+          List mstep = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"if");
           arma::vec tmp =  mstep["phi"];
           phi = tmp;
           double rho = mstep["rho"];
@@ -166,8 +166,11 @@ List fmrlasso(
         actiteration++ ;
         for(int j = 0; j<k; j++){
           arma::vec excol= ex.col(j);
-          arma::vec t_act = act.col(j);
-          printf("%f\n",sum(t_act>0));
+          arma::vec t_act(act.col(j));
+         // printf("%f\n",sum(t_act));
+          ///printf("%i\n",j);
+          //t_act.print();
+          act.print();
           arma::mat xtilde(x.cols(arma::find(t_act>0)));
           xtilde.each_col() %= sqrt(excol);
           arma::vec ytilde = y % sqrt(excol);
@@ -178,7 +181,7 @@ List fmrlasso(
           jtemp(0) = j;
           arma::vec phi = beta(arma::find(t_act>0), jtemp) / ssd(j);
           double lambdaupcoord = lambda * pow(prob(j),gamma);
-          List mstepact = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x);
+          List mstepact = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"else");
           arma::vec phiact =  mstepact["phi"];
           double rho = mstepact["rho"];
           act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
@@ -186,7 +189,6 @@ List fmrlasso(
           ssd(j) = 1/rho;
         }
       }
-      warn=true;
       //E-Step:
       NumericVector value;
       xbeta = x * beta;
@@ -234,6 +236,6 @@ List fmrlasso(
       i++;     
       printf("%i\n",i);
     }
-    out = List::create(conv,i,jaime,act);
+    out = List::create(conv,i,jaime,act,sum(jaime));
     return out;
   }
