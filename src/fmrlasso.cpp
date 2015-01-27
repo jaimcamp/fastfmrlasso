@@ -2,36 +2,6 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-// Below is a simple example of exporting a C++ function to R. You can
-// source this function into an R session using the Rcpp::sourceCpp 
-// function (or via the Source button on the editor toolbar)
-
-// For more on using Rcpp click the Help button on the editor toolbar
-NumericVector rowSumsC(NumericMatrix x){
-  int nrow = x.nrow(), ncol = x.ncol();
-  NumericVector out(nrow);
-  for (int i = 0; i < nrow; i++) {
-    double total = 0;
-    for (int j = 0; j < ncol; j++) {
-      total += x(i, j);
-    }
-    out[i] = total;
-  }
-  return out;
-}
-
-NumericVector colSumsC(NumericMatrix x){
-  int nrow = x.nrow(), ncol = x.ncol();
-  NumericVector out(ncol);
-  for (int i = 0; i < ncol; i++) {
-    double total = 0;
-    for (int j = 0; j < nrow; j++) {
-      total += x(j, i);
-    }
-    out[i] = total;
-  }
-  return out;
-}
 // [[Rcpp::export]]
 
 List updatecoord(arma::vec phi,double yy,arma::mat xx,arma::mat yx,
@@ -40,13 +10,15 @@ double lambdaupcoord, double n2,arma::mat x, std::string status){
   //Updates  \rho  
   double yxphi = dot(phi,yx);
   double rho = (yxphi + sqrt( pow(yxphi,2)  + 4*yy*n2 ) ) / ( 2*yy  );
-  int xxdim = xx.n_cols;
-  //arma::vec tmp = arma::vec(phi.subvec(1,phi.n_elem-1));
-//  printf("%s\n",status.c_str());
-//  printf("%i\n",phi.n_elem);
-//  printf("%i\n",xx.n_cols);
-  arma::vec subxx = arma::vec(xx( arma::span(0,0), arma::span(1,xxdim-1)).t());
-  phi(0) = ( rho * yx(0) - dot(subxx,phi.subvec(1,phi.n_elem-1))) / xx(0,0);
+  if( phi.n_elem <=1){
+    phi(0) = ( rho * yx(0) ) / xx(0,0);
+  } else {
+    //xx.submat(0,1,xx.n_rows-1,xx.n_cols-1)
+    //arma::vec tmp = arma::vec(phi.subvec(1,phi.n_elem-1));
+    int xxdim = xx.n_cols;
+    arma::vec subxx = arma::vec(xx( arma::span(0,0), arma::span(1,xxdim-1)).t());
+    phi(0) = ( rho * yx(0) - dot(subxx,phi.subvec(1,phi.n_elem-1))) / xx(0,0);
+  }
   if( phi.n_elem > 1){
     int philength = phi.n_elem;
     for(int j = 1; j < (philength ); j++){
@@ -92,6 +64,7 @@ List fmrlasso(
     arma::mat act(p,k, arma::fill::zeros);; //To store active set
     arma::mat xbeta(n,k);
     arma::mat dnregr(n,k,arma::fill::zeros);
+    double loglik = 0;
     List out;
     
     int i =0;
@@ -108,15 +81,12 @@ List fmrlasso(
     
     arma::uvec jaime;
     
-    while ( ( (!conv)|(!allcoord) ) & (i<maxiter) & !warn ){
+   while ( ( (!conv)|(!allcoord) ) & (i<maxiter) & !warn ){
       //while  conv or allcord are false AND i is less than maxiter AND warn is false
       //M-STEP
       //update prob
       arma::vec ncomp = arma::conv_to<arma::vec>::from(sum(ex,0));
-      beta(0,0)=-8; //To try
-      beta(2,1)=-13;
-      beta(2,2)=23;
-      arma::mat temp = sum(abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
+      arma::mat temp = sum(arma::abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
       arma::vec l1normphi = arma::conv_to<arma::vec>::from(temp)  % (1 / ssd);
       arma::vec probfeas = ncomp / n; //feasible point
       double valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
@@ -140,7 +110,7 @@ List fmrlasso(
       allcoord = true;
       }
       
-      printf("%s\n", allcoord ? "true" : "false");
+      //printf("%s\n", allcoord ? "true" : "false");
       
       if (allcoord){
         for (int j=0; j < k; j++){
@@ -167,10 +137,6 @@ List fmrlasso(
         for(int j = 0; j<k; j++){
           arma::vec excol= ex.col(j);
           arma::vec t_act(act.col(j));
-         // printf("%f\n",sum(t_act));
-          ///printf("%i\n",j);
-          //t_act.print();
-          act.print();
           arma::mat xtilde(x.cols(arma::find(t_act>0)));
           xtilde.each_col() %= sqrt(excol);
           arma::vec ytilde = y % sqrt(excol);
@@ -184,7 +150,6 @@ List fmrlasso(
           List mstepact = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"else");
           arma::vec phiact =  mstepact["phi"];
           double rho = mstepact["rho"];
-          act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
           beta(arma::find(t_act>0), jtemp)  = phiact/rho; //Same dimensions, the phi returned before is considering only the nonzero values
           ssd(j) = 1/rho;
         }
@@ -200,6 +165,9 @@ List fmrlasso(
           dnregr(h,j) = value(0);
         }
       }
+      //xbeta.print("xbeta");
+      //y.print("y");
+      //ssd.print("ssd");
       arma::mat probdnregr(dnregr);
       probdnregr.each_row() %= arma::conv_to<arma::rowvec>::from(prob);
       arma::vec dmix = sum(probdnregr,1);
@@ -209,33 +177,36 @@ List fmrlasso(
       //Convergence criterion of \theta
       arma::vec thetaold = theta;
       theta = arma::join_cols(arma::join_cols(arma::vectorise(beta),ssd),prob);
-      err1 = max(abs(theta-thetaold)/ (1+abs(theta)));
+      err1 = max(arma::abs(theta-thetaold)/ (1+arma::abs(theta)));
       
       //LogLig
-      double loglik = sum(log(dmix));
+      loglik = sum(log(dmix));
       if(! arma::is_finite(loglik)){
         arma::get_stream_err2() << "Bad starting value, loglik = -inf" << arma::endl;
         warn = true;
-        break;
+//        break;
       }
       
       //Convergence criterion of plik    
-      double plikold = plik;
-      plik = -loglik+lambda*sum(pow(prob,gamma) % arma::conv_to<arma::vec>::from(sum(abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0) ) / ssd);
+      double plikold(plik);
+      plik = -loglik+lambda*sum(pow(prob,gamma) % arma::conv_to<arma::vec>::from(sum(arma::abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0) ) / ssd);
       if( ( ( plik-plikold ) > 0 ) & ( i > 0 )) {
         //is plik reduced? remark: algorithm is constructed to reduce plik.
         if (warnings){
           arma::get_stream_err2() << "error: penalized negative loglik not reduced" << arma::endl;
         }
       }
-      err2 = abs(plik-plikold) / (1+abs(plik));
+      err2 = std::abs(plik-plikold) / (1+std::abs(plik));
       
       //converged?
-      
       conv = ( (err1 < sqrt(term) ) & ( err2 < term ) );
       i++;     
-      printf("%i\n",i);
+      //printf("%i\n",i);
     }
-    out = List::create(conv,i,jaime,act,sum(jaime));
+    double n_zero = accu(beta == 0);
+    double d = k*(p+1+1) - 1 - n_zero; //Degrees of freedom
+    double bic = -2 * loglik + log(n)*d ; //BIC criterion
+    
+    out = List::create(k,prob,beta,ssd,plik,bic,ex,i,warn,conv,allcoord );
     return out;
   }

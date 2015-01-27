@@ -151,7 +151,7 @@ fmrlasso <- function(x,y,k,lambda,gamma=1,ssd.ini,ex.ini,term=10^{-6},maxiter=10
         yy <- sum(ytilde^{2})
         yx <- crossprod(ytilde,xtilde)
         xx <- crossprod(xtilde)
-        mstep <- updatecoord(phi=beta[,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
+        mstep <- fmrlasso::updatecoord(phi=beta[,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
         phi <- mstep$phi
         rho <- mstep$rho
         act[[j]] <-which(phi!=0)
@@ -168,7 +168,7 @@ fmrlasso <- function(x,y,k,lambda,gamma=1,ssd.ini,ex.ini,term=10^{-6},maxiter=10
         yy <- sum(ytilde^{2})
         yx <- crossprod(ytilde,xtilde)
         xx <- crossprod(xtilde)
-        mstepact <- updatecoord(phi=beta[t.act,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
+        mstepact <- fmrlasso::updatecoord(phi=beta[t.act,j]/ssd[j],yy=yy,xx=xx,yx=yx,lambda=lambda*(prob[j])^{gamma},n=sum(EX))
         phiact <- mstepact$phi
         rho <- mstepact$rho
         beta[t.act,j] <- phiact/rho
@@ -186,6 +186,7 @@ fmrlasso <- function(x,y,k,lambda,gamma=1,ssd.ini,ex.ini,term=10^{-6},maxiter=10
     dmix <- rowSums(probdnregr)
     ex <- probdnregr/dmix
 
+
 #convergence criterion of theta
     thetaold <- theta
     theta <- c(as.vector(beta),as.vector(ssd),prob)
@@ -202,7 +203,7 @@ fmrlasso <- function(x,y,k,lambda,gamma=1,ssd.ini,ex.ini,term=10^{-6},maxiter=10
      if (warnings) warning("error: penalized negative loglik not reduced")
     }
     err2 <- abs(plik-plikold)/(1+abs(plik))
-
+    write(err2,file = "data.txt",append = T)
     #converged?
     conv <- ((err1<sqrt(term))&(err2<term))
  
