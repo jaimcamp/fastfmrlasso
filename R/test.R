@@ -44,13 +44,17 @@ microbenchmark(times = 10000,
  
 #Something more complex 
 
-n<-100
+n<-10
 k<-4
-p<-800
+p<-80
 x<-matrix(rexp(n*p),nrow = n,ncol = p)
 y<-rexp(n)
 exini<-fmrlasso::ini.ex(k = k,n = n)
-microbenchmark(times = 100,
+microbenchmark(times =1000,
                tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,gamma = 1,exini = exini),
                tmp2<-fmrlasso::fmrlasso(x = x,y = y,k = k,lambda = 1.08,  ssd.ini = 0.5,gamma = 1,ex.ini = exini)
 )
+#mean    median        uq       max neval
+#67.62851  66.02392  67.34028  141.8617  1000
+#800.94941 791.33235 813.40691 1123.8950  1000
+> 

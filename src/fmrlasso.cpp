@@ -208,5 +208,6 @@ List fmrlasso(
     double bic = -2 * loglik + log(n)*d ; //BIC criterion
     
     out = List::create(k,prob,beta,ssd,plik,bic,ex,i,warn,conv,allcoord );
+    //out = List::create(1);
     return out;
   }
