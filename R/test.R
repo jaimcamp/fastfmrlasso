@@ -7,9 +7,9 @@ x<-matrix(rexp(n*p),nrow = n,ncol = p)
 y<-rexp(n)
 exini<-fmrlasso::ini.ex(k = k,n = n)
 
-(tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,
+(tmp<-fmrlasso_f(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,
          gamma = 0.9,exini = exini))
-fmrlasso::fmrlasso(x = x,y = y,k = k,lambda = 1.08,  ssd.ini = 0.5,
+tmp2<-fmrlasso::fmrlasso(x = x,y = y,k = k,lambda = 1.08,  ssd.ini = 0.5,
                    gamma = 0.9,ex.ini = exini)
 
 #Comparison implementations cnloglikprob
@@ -44,14 +44,14 @@ microbenchmark(times = 10000,
  
 #Something more complex 
 
-n<-10
+n<-100
 k<-4
-p<-80
+p<-800
 x<-matrix(rexp(n*p),nrow = n,ncol = p)
 y<-rexp(n)
 exini<-fmrlasso::ini.ex(k = k,n = n)
-microbenchmark(times =1000,
-               tmp<-fmrlasso(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,gamma = 1,exini = exini),
+microbenchmark(times =2,
+               tmp<-fmrlasso_f(x = x,y = y,k = k,lambda = 1.08,ssdini = 0.5,gamma = 1,exini = exini),
                tmp2<-fmrlasso::fmrlasso(x = x,y = y,k = k,lambda = 1.08,  ssd.ini = 0.5,gamma = 1,ex.ini = exini)
 )
 #mean    median        uq       max neval
