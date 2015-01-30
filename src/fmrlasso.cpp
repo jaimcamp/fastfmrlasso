@@ -4,7 +4,7 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 
-List updatecoord(arma::vec phi,double yy,arma::mat xx,arma::mat yx,
+List updatecoord_f(arma::vec phi,double yy,arma::mat xx,arma::mat yx,
 double lambdaupcoord, double n2,arma::mat x, std::string status){
   List out;
   //Updates  \rho  
@@ -38,7 +38,7 @@ double lambdaupcoord, double n2,arma::mat x, std::string status){
 
 // [[Rcpp::export]]
 
-double cnloglikprob(
+double cnloglikprob_f(
   arma::vec ncomp, arma::vec l1normphi, arma::vec prob, double lambda, double gamma){
     // Purpose: complete negative loglikelihood involving (pi1,...,pik) (rho,phi fixed).
     return (-1*dot(ncomp,log(prob))) + (lambda * dot(pow(prob,gamma),l1normphi));
@@ -46,7 +46,7 @@ double cnloglikprob(
     
 // [[Rcpp::export]]
     
-List fmrlasso(
+List fmrlasso_f(
   arma::mat x, arma::vec y,
   int k, double lambda, double ssdini, arma::mat exini,
   double gamma=1,
@@ -79,8 +79,6 @@ List fmrlasso(
     int actiteration = 0; // act.iter diff from the one in the arguments
     double del = 0.1;
     
-    arma::uvec jaime;
-    
    while ( ( (!conv)|(!allcoord) ) & (i<maxiter) & !warn ){
       //while  conv or allcord are false AND i is less than maxiter AND warn is false
       //M-STEP
@@ -89,14 +87,14 @@ List fmrlasso(
       arma::mat temp = sum(arma::abs(beta.submat(1,0,beta.n_rows-1,beta.n_cols-1)),0);
       arma::vec l1normphi = arma::conv_to<arma::vec>::from(temp)  % (1 / ssd);
       arma::vec probfeas = ncomp / n; //feasible point
-      double valueold = cnloglikprob(ncomp,l1normphi,prob,lambda,gamma);
-      double valuenew = cnloglikprob(ncomp,l1normphi,probfeas,lambda,gamma);
+      double valueold = cnloglikprob_f(ncomp,l1normphi,prob,lambda,gamma);
+      double valuenew = cnloglikprob_f(ncomp,l1normphi,probfeas,lambda,gamma);
       double t = 1.0;
       arma::vec probnew(probfeas);
       while ((valuenew-valueold) > 0){ //Modify the PI probability while the logLIK is growing
         t = t*del;
         probnew = (1-t)*prob+t*probfeas; // \pi^(m+1)
-        valuenew = cnloglikprob(ncomp,l1normphi,probnew,lambda,gamma);
+        valuenew = cnloglikprob_f(ncomp,l1normphi,probnew,lambda,gamma);
       }
       prob = arma::vec(probnew); //Actually updates the probabilities \Pi
       
@@ -123,11 +121,10 @@ List fmrlasso(
           arma::mat xx = xtilde.t() * xtilde; //Until now, everything the same as the R version
           arma::vec phi = beta.col(j)/ssd(j);
           double lambdaupcoord = lambda * pow(prob(j),gamma);
-          List mstep = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"if");
+          List mstep = updatecoord_f(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"if");
           arma::vec tmp =  mstep["phi"];
           phi = tmp;
           double rho = mstep["rho"];
-          jaime = phi!=0;
           act.col(j) = arma::conv_to<arma::vec>::from(phi != 0);
           beta.col(j) = arma::vec(phi/rho);
           ssd(j) = 1/rho;
@@ -147,7 +144,7 @@ List fmrlasso(
           jtemp(0) = j;
           arma::vec phi = beta(arma::find(t_act>0), jtemp) / ssd(j);
           double lambdaupcoord = lambda * pow(prob(j),gamma);
-          List mstepact = updatecoord(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"else");
+          List mstepact = updatecoord_f(phi,yy,xx,yx,lambdaupcoord,sum(excol),x,"else");
           arma::vec phiact =  mstepact["phi"];
           double rho = mstepact["rho"];
           beta(arma::find(t_act>0), jtemp)  = phiact/rho; //Same dimensions, the phi returned before is considering only the nonzero values
@@ -184,7 +181,7 @@ List fmrlasso(
       if(! arma::is_finite(loglik)){
         arma::get_stream_err2() << "Bad starting value, loglik = -inf" << arma::endl;
         warn = true;
-//        break;
+        break;
       }
       
       //Convergence criterion of plik    
@@ -207,7 +204,17 @@ List fmrlasso(
     double d = k*(p+1+1) - 1 - n_zero; //Degrees of freedom
     double bic = -2 * loglik + log(n)*d ; //BIC criterion
     
-    out = List::create(k,prob,beta,ssd,plik,bic,ex,i,warn,conv,allcoord );
-    //out = List::create(1);
+    arma::uvec cluster(n);
+    arma::rowvec exrow;
+    for (int j = 0; j<n; j++){
+      exrow = ex.row(j);
+      exrow.max(cluster(j));
+    }
+    cluster = cluster +1;
+    out = List::create(Rcpp::Named("k")=k,Rcpp::Named("prob")=prob,
+    Rcpp::Named("coef")=beta,Rcpp::Named("ssd")=ssd,
+    Rcpp::Named("plik")=plik,Rcpp::Named("bic")=bic,
+    Rcpp::Named("ex")=ex,Rcpp::Named("cluster")=cluster,
+    Rcpp::Named("niter")=i,Rcpp::Named("warnings")=warn);
     return out;
   }
