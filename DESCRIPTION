@@ -1,11 +1,12 @@
 Package: fastfmrlasso
 Type: Package
 Title: Fast implementation of the Finite Mixture Regression Models 
-Version: 0.1
+Version: 0.5
 Date: 2015-01-05
 Author: Jaime Campos
 Maintainer: Jaime Campos <jaime_alberto.campos_valenzuela@tu-dresden.de>
 Description: Implementation of the FMR_LASSO algorithm in C++
 License: GPL (>= 2)
-Imports: Rcpp (>= 0.11.3)
+Imports: Rcpp (>= 0.11.3),
+    RcppArmadillo (>= 0.4.500.0)
 LinkingTo: Rcpp
