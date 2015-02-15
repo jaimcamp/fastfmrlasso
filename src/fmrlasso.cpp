@@ -218,3 +218,79 @@ List fmrlasso_f(
     Rcpp::Named("niter")=i,Rcpp::Named("warnings")=warn);
     return out;
   }
+
+
+
+//List cvfmrlassopath(
+//  arma::mat x, arma::vec y,
+//  int k, arma::vec lambda, double ssdini, arma::mat exini,
+//  double gamma=1,
+//  double term= 10e-6, int maxiter=1000,
+//  int actiter=10, int K = 10) {
+//  //all.folds <- fmrlasso::cv.folds(length(y), K)
+//  arma::mat errmat(lambda.n_elem, k, arma::fill::zeros);; 
+//  for(int i = 1; i < K; i++){
+//    omit <- all.folds[[i]]
+//    fit <- fmrlassopath_f(x = x[-omit, ], y = y[-omit], k = k, 
+//                          lambda = lambda, gamma = gamma, ssd.ini = ssd.ini, 
+//                          ex.ini = as.matrix(ex.ini[-omit, ]), term = term, 
+//                          maxiter = maxiter, actiter = actiter)
+//    errmat[, i] <- fmrlasso::predloss(fit, x[omit, ], y[omit])$loss
+//    cat("\n CV Fold", i, "\n\n")
+//  }
+//  cv <- apply(errmat, 1, mean)
+//  cv.error <- sqrt(apply(errmat, 1, var)/K)
+//  dimnames(errmat) <- list(lambda = lambda, fold = 1:K)
+//  object <- list(lambda = lambda, cv = cv, cv.error = cv.error, 
+//                 errmat = errmat)
+//  invisible(object)
+//}
+
+// [[Rcpp::export]]
+
+List fmrlassopath_f(
+  arma::mat x, arma::vec y,
+  int k, arma::vec lambda, double ssdini, arma::mat exini,
+  double gamma=1,
+  double term= 10e-6, int maxiter=1000,
+  int actiter=10) {
+    int n = y.n_elem;
+    int p = x.n_cols -1;
+    int lla = lambda.n_elem;
+    arma::mat prob(k, lla, arma::fill::zeros);
+    arma::cube coef(p+1, k, lla, arma::fill::zeros);
+    arma::mat ssd(k, lla, arma::fill::zeros);
+    arma::vec plik(lla,arma::fill::zeros);
+    arma::vec bic(lla,arma::fill::zeros);
+    arma::cube ex(n, k, lla, arma::fill::zeros);
+    arma::mat cluster(n, lla, arma::fill::zeros);
+    arma::vec niter(lla, arma::fill::zeros);
+    List fit;
+    for (int i=0; i<lla; i++) {
+      fit = fmrlasso_f(x, y, k, lambda(i), ssdini, exini, gamma, term, 
+                        maxiter, actiter);
+      arma::vec tmp = fit["prob"];
+      prob.col(i) = tmp;
+      arma::mat tmp2 =fit["coef"];
+      coef.slice(i) =  tmp2;
+      arma::vec tmp3 = fit["ssd"];
+      ssd.col(i) = tmp3;
+      plik(i) = fit["plik"];
+      bic(i) = fit("bic");
+      arma::mat tmp4 = fit["ex"];
+      ex.slice(i) = tmp4;
+      arma::vec tmp5 = fit["cluster"];
+      cluster.col(i) = tmp5;
+      niter(i) = fit("niter");
+    }
+//    dimnames(coef) <- list(coef = 0:p, comp = 1:k, lambda = lambda)
+//    dimnames(coef)[[1]][1] <- "intercept"
+//    dimnames(prob) <- dimnames(ssd) <- list(comp = 1:k, lambda = lambda)
+//    dimnames(ex) <- list(NULL, comp = 1:k, lambda = lambda)
+//    dimnames(cluster) <- list(NULL, lambda = lambda)
+    List res = List::create(Rcpp::Named("k")=k, Rcpp::Named("lambda") = lambda,  Rcpp::Named("prob") = prob,  Rcpp::Named("coef") = coef, 
+                 Rcpp::Named("ssd") = ssd,  Rcpp::Named("plik") = plik,  Rcpp::Named("bic") = bic,  Rcpp::Named("ex") = ex,  Rcpp::Named("cluster") = cluster, 
+                 Rcpp::Named("niter") = niter);
+    return(res);
+                 
+}
