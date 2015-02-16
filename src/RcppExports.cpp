@@ -72,6 +72,30 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
+// fmrlassopath_f
+List fmrlassopath_f(arma::mat x, arma::vec y, int k, arma::vec lambda, double ssdini, arma::mat exini, double gamma = 1, double term = 10e-6, int maxiter = 1000, int actiter = 10);
+RcppExport SEXP fastfmrlasso_fmrlassopath_f(SEXP xSEXP, SEXP ySEXP, SEXP kSEXP, SEXP lambdaSEXP, SEXP ssdiniSEXP, SEXP exiniSEXP, SEXP gammaSEXP, SEXP termSEXP, SEXP maxiterSEXP, SEXP actiterSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP );
+        Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP );
+        Rcpp::traits::input_parameter< int >::type k(kSEXP );
+        Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP );
+        Rcpp::traits::input_parameter< double >::type ssdini(ssdiniSEXP );
+        Rcpp::traits::input_parameter< arma::mat >::type exini(exiniSEXP );
+        Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP );
+        Rcpp::traits::input_parameter< double >::type term(termSEXP );
+        Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP );
+        Rcpp::traits::input_parameter< int >::type actiter(actiterSEXP );
+        List __result = fmrlassopath_f(x, y, k, lambda, ssdini, exini, gamma, term, maxiter, actiter);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
 // rcpp_hello_world
 List rcpp_hello_world();
 RcppExport SEXP fastfmrlasso_rcpp_hello_world() {
