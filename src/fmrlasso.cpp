@@ -195,12 +195,12 @@ List fmrlasso_f(
         }
       }
       err2 = std::abs(plik-plikold) / (1+std::abs(plik));
-      printf("%s\n", (err1 < sqrt(term)) ? "true" : "false");
-      printf("%f\n",err1);
+      //printf("%s\n", (err1 < sqrt(term)) ? "true" : "false");
+      //printf("%f\n",err1);
       //converged?
       conv = ( (err1 < sqrt(term) ) & ( err2 < term ) );
       i++;     
-      printf("%i\n",i);
+      //printf("%i\n",i);
     }
     double n_zero = accu(beta == 0);
     double d = k*(p+1+1) - 1 - n_zero; //Degrees of freedom
