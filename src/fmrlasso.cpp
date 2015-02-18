@@ -254,7 +254,7 @@ List fmrlassopath_f(
   arma::mat x, arma::vec y,
   int k, arma::vec lambda, double ssdini, arma::mat exini,
   double gamma=1,
-  double term= 10e-6, int maxiter=1000,
+  double term= 1e-6, int maxiter=1000,
   int actiter=10) {
     int n = y.n_elem;
     int p = x.n_cols -1;

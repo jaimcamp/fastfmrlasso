@@ -73,7 +73,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // fmrlassopath_f
-List fmrlassopath_f(arma::mat x, arma::vec y, int k, arma::vec lambda, double ssdini, arma::mat exini, double gamma = 1, double term = 10e-6, int maxiter = 1000, int actiter = 10);
+List fmrlassopath_f(arma::mat x, arma::vec y, int k, arma::vec lambda, double ssdini, arma::mat exini, double gamma = 1, double term = 1e-6, int maxiter = 1000, int actiter = 10);
 RcppExport SEXP fastfmrlasso_fmrlassopath_f(SEXP xSEXP, SEXP ySEXP, SEXP kSEXP, SEXP lambdaSEXP, SEXP ssdiniSEXP, SEXP exiniSEXP, SEXP gammaSEXP, SEXP termSEXP, SEXP maxiterSEXP, SEXP actiterSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;

@@ -1,7 +1,7 @@
 Package: fastfmrlasso
 Type: Package
 Title: Fast implementation of the Finite Mixture Regression Models 
-Version: 0.6.1
+Version: 0.6.2
 Date: 2015-01-05
 Author: Jaime Campos
 Maintainer: Jaime Campos <jaime_alberto.campos_valenzuela@tu-dresden.de>
