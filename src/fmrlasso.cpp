@@ -50,7 +50,7 @@ List fmrlasso_f(
   arma::mat x, arma::vec y,
   int k, double lambda, double ssdini, arma::mat exini,
   double gamma=1,
-  double term= 10e-6, int maxiter=1000,
+  double term= 1e-6, int maxiter=1000,
   int actiter=10,
   bool warnings=true){
     int n = y.n_elem;
@@ -172,6 +172,7 @@ List fmrlasso_f(
       ex.each_col() /= dmix; //Everything ok 
       
       //Convergence criterion of \theta
+      
       arma::vec thetaold = theta;
       theta = arma::join_cols(arma::join_cols(arma::vectorise(beta),ssd),prob);
       err1 = max(arma::abs(theta-thetaold)/ (1+arma::abs(theta)));
@@ -194,16 +195,16 @@ List fmrlasso_f(
         }
       }
       err2 = std::abs(plik-plikold) / (1+std::abs(plik));
-      
+      printf("%s\n", (err1 < sqrt(term)) ? "true" : "false");
+      printf("%f\n",err1);
       //converged?
       conv = ( (err1 < sqrt(term) ) & ( err2 < term ) );
       i++;     
-      //printf("%i\n",i);
+      printf("%i\n",i);
     }
     double n_zero = accu(beta == 0);
     double d = k*(p+1+1) - 1 - n_zero; //Degrees of freedom
     double bic = -2 * loglik + log(n)*d ; //BIC criterion
-    
     arma::uvec cluster(n);
     arma::rowvec exrow;
     for (int j = 0; j<n; j++){
@@ -227,7 +228,7 @@ List fmrlasso_f(
 //  double gamma=1,
 //  double term= 10e-6, int maxiter=1000,
 //  int actiter=10, int K = 10) {
-//  //all.folds <- fmrlasso::cv.folds(length(y), K)
+//  List allfolds = R::split(R::sample(1:y.n_elem), R::rep(1:K, length = y.n_elem));
 //  arma::mat errmat(lambda.n_elem, k, arma::fill::zeros);; 
 //  for(int i = 1; i < K; i++){
 //    omit <- all.folds[[i]]
@@ -244,6 +245,7 @@ List fmrlasso_f(
 //  object <- list(lambda = lambda, cv = cv, cv.error = cv.error, 
 //                 errmat = errmat)
 //  invisible(object)
+//  return(1);
 //}
 
 // [[Rcpp::export]]

@@ -48,7 +48,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // fmrlasso_f
-List fmrlasso_f(arma::mat x, arma::vec y, int k, double lambda, double ssdini, arma::mat exini, double gamma = 1, double term = 10e-6, int maxiter = 1000, int actiter = 10, bool warnings = true);
+List fmrlasso_f(arma::mat x, arma::vec y, int k, double lambda, double ssdini, arma::mat exini, double gamma = 1, double term = 1e-6, int maxiter = 1000, int actiter = 10, bool warnings = true);
 RcppExport SEXP fastfmrlasso_fmrlasso_f(SEXP xSEXP, SEXP ySEXP, SEXP kSEXP, SEXP lambdaSEXP, SEXP ssdiniSEXP, SEXP exiniSEXP, SEXP gammaSEXP, SEXP termSEXP, SEXP maxiterSEXP, SEXP actiterSEXP, SEXP warningsSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;

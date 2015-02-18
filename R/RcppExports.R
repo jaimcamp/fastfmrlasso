@@ -9,7 +9,7 @@ cnloglikprob_f <- function(ncomp, l1normphi, prob, lambda, gamma) {
     .Call('fastfmrlasso_cnloglikprob_f', PACKAGE = 'fastfmrlasso', ncomp, l1normphi, prob, lambda, gamma)
 }
 
-fmrlasso_f <- function(x, y, k, lambda, ssdini, exini, gamma = 1, term = 10e-6, maxiter = 1000L, actiter = 10L, warnings = TRUE) {
+fmrlasso_f <- function(x, y, k, lambda, ssdini, exini, gamma = 1, term = 1e-6, maxiter = 1000L, actiter = 10L, warnings = TRUE) {
     .Call('fastfmrlasso_fmrlasso_f', PACKAGE = 'fastfmrlasso', x, y, k, lambda, ssdini, exini, gamma, term, maxiter, actiter, warnings)
 }
 
